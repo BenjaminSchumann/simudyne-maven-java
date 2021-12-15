@@ -11,7 +11,7 @@ public class Trader extends Agent<TradingModel.Globals> {
     static Random random = new Random();
 
     @Variable
-    double tradingThresh = random.nextGaussian();
+    public double tradingThresh = random.nextGaussian(); // had to change to public so it works (BS)
 
     public static Action<Trader> processInformation() {
         return Action.create(Trader.class, trader -> {

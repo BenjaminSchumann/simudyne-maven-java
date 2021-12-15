@@ -21,7 +21,7 @@ public class TradingModel extends AgentBasedModel<TradingModel.Globals> {
         @Input(name = "Update Frequency")
         public double updateFrequency = 0.01;
 
-        //@Constant(name = "Number of Traders")
+        @Constant(name = "Number of Traders") // so it is visible on setup (BS)
         public long nbTraders = 200;
 
         @Input(name = "Lambda")
