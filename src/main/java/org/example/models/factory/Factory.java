@@ -12,7 +12,7 @@ public class Factory extends AgentBasedModel<Globals> {
         createLongAccumulator("numProdsDone", "number of products done");
 
         // load all agents
-        registerAgentTypes(Machine.class, Conveyor.class, Product.class);
+        registerAgentTypes(Machine.class, Conveyor.class);
         // load all links
         registerLinkTypes(Links.NormalLink.class);
     }
@@ -22,13 +22,10 @@ public class Factory extends AgentBasedModel<Globals> {
         // create agent groups here
         Group<Machine> myMachine = generateGroup(Machine.class, 1);
         Group<Conveyor> myConveyor = generateGroup(Conveyor.class, 1 /*, currConv.createProducts*/);
-        Group<Product> myProducts = generateGroup(Product.class, getGlobals().numInitialProducts);
 
         // link agents here
         myMachine.fullyConnected(myConveyor, Links.NormalLink.class); // machine knows conveyor
         myConveyor.fullyConnected(myMachine, Links.NormalLink.class); // conveyor knows machine
-        myMachine.fullyConnected(myProducts, Links.NormalLink.class); // do so products actually are created
-
 
         super.setup(); // final Simudyne setup
     }
@@ -38,7 +35,11 @@ public class Factory extends AgentBasedModel<Globals> {
 
         super.step(); // FIRST: do Simudyne stepping
 
-        //firstStep(myMachine.spawnProducts, ); // done before any other behavior on 1sst step
+        // seed model with initial products (only on first step)
+        firstStep(
+                Conveyor.initializeProducts(10),
+                Machine.initializeProduct()
+        );
         // sequence is crucial here, consider Splits
         run(
                 Machine.someMachineAction()
