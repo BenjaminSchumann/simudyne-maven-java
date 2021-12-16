@@ -1,4 +1,4 @@
-package org.example.models.trading;
+package org.example.models.challenge_ben;
 
 import simudyne.core.abm.Action;
 import simudyne.core.abm.Agent;
@@ -6,12 +6,12 @@ import simudyne.core.annotations.Variable;
 
 import java.util.Random;
 
-public class Trader extends Agent<TradingModel.Globals> {
+public class Trader extends Agent<trading_challenge_ben.Globals> {
 
     static Random random = new Random();
 
     @Variable
-    double tradingThresh = random.nextGaussian();
+    public double tradingThresh = random.nextGaussian(); // had to change to public so it works (BS)
 
     public static Action<Trader> processInformation() {
         return Action.create(Trader.class, trader -> {

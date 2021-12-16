@@ -8,12 +8,14 @@ import org.example.models.mortgage.MortgageModel;
 import org.example.models.schelling.SchellingModel;
 import org.example.models.tokyo.TokyoModel;
 import org.example.models.trading.TradingModel;
+import org.example.models.challenge_ben.trading_challenge_ben;
 import org.example.models.volatilityModel.VolatilityModel;
 import simudyne.nexus.Server;
 
 public class Main {
   public static void main(String[] args) {
     Server.register("Trading Model", TradingModel.class);
+    Server.register("Trading challenge", trading_challenge_ben.class);
     Server.register("Mortgage Model", MortgageModel.class);
     Server.register("Credit Card Model", CreditCardModel.class);
     Server.register("Continuous Double Auction Model", CDAModel.class);

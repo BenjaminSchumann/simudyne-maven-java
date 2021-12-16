@@ -1,4 +1,4 @@
-package org.example.models.trading;
+package org.example.models.challenge_ben;
 
 import simudyne.core.abm.AgentBasedModel;
 import simudyne.core.abm.GlobalState;
@@ -6,14 +6,11 @@ import simudyne.core.abm.Group;
 import simudyne.core.annotations.Constant;
 import simudyne.core.annotations.Input;
 import simudyne.core.annotations.ModelSettings;
-import simudyne.core.annotations.Variable;
-import simudyne.core.graph.DoubleAccumulator;
-import simudyne.core.graph.LongAccumulator;
 import simudyne.core.rng.SeededRandom;
 
 
 @ModelSettings(macroStep = 60)
-public class TradingModel extends AgentBasedModel<TradingModel.Globals> {
+public class trading_challenge_ben extends AgentBasedModel<trading_challenge_ben.Globals> {
 
     public SeededRandom rng = SeededRandom.create(42);
 
@@ -21,8 +18,11 @@ public class TradingModel extends AgentBasedModel<TradingModel.Globals> {
         @Input(name = "Update Frequency")
         public double updateFrequency = 0.01;
 
-        //@Constant(name = "Number of Traders")
+        @Constant(name = "Number of Traders") // so it is visible on setup (BS)
         public long nbTraders = 200;
+
+        @Constant(name = "Number of momentum Traders") // so it is visible on setup (BS)
+        public long nbMomentumTraders = 50;
 
         @Input(name = "Lambda")
         public double lambda = 10;
@@ -33,13 +33,14 @@ public class TradingModel extends AgentBasedModel<TradingModel.Globals> {
         public double informationSignal;
     }
 
-    {
+    { // empty class initializer, should be picked up by overridden "init"
         createLongAccumulator("buys", "Number of buy orders");
         createLongAccumulator("sells", "Number of sell orders");
         createDoubleAccumulator("price", "Price");
 
-        registerAgentTypes(Market.class, Trader.class);
-        registerLinkTypes(Links.MktTraderLink.class, Links.TraderMktLink.class);
+        registerAgentTypes(Market.class, Trader.class, MomentumTrader.class);
+        registerLinkTypes(Links.MktTraderLink.class, Links.TraderMktLink.class, Links.MomentumTraderMktLink.class, Links.MktMomentumTraderLink.class);
+
     }
 
     @Override
@@ -52,9 +53,14 @@ public class TradingModel extends AgentBasedModel<TradingModel.Globals> {
                 generateGroup(Market.class, 1, market -> {
                     market.price = 4.0;
                 });
+        Group<MomentumTrader> momentumTraderGroup =
+                generateGroup(MomentumTrader.class, getGlobals().nbMomentumTraders);
 
         traderGroup.fullyConnected(marketGroup, Links.TraderMktLink.class);
         marketGroup.fullyConnected(traderGroup, Links.MktTraderLink.class);
+        // link momentum traders as well (same link types as before)
+        momentumTraderGroup.fullyConnected(marketGroup, Links.MomentumTraderMktLink.class);
+        marketGroup.fullyConnected(momentumTraderGroup, Links.MktMomentumTraderLink.class);
 
         super.setup();
     }
