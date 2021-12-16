@@ -3,6 +3,7 @@ package org.example.models.challenge_ben;
 import simudyne.core.abm.AgentBasedModel;
 import simudyne.core.abm.GlobalState;
 import simudyne.core.abm.Group;
+import simudyne.core.abm.Split;
 import simudyne.core.annotations.Constant;
 import simudyne.core.annotations.Input;
 import simudyne.core.annotations.ModelSettings;
@@ -21,7 +22,7 @@ public class trading_challenge_ben extends AgentBasedModel<trading_challenge_ben
         @Constant(name = "Number of Traders") // so it is visible on setup (BS)
         public long nbTraders = 200;
 
-        @Constant(name = "Number of momentum Traders") // so it is visible on setup (BS)
+        @Input(name = "Number of momentum Traders") // so it is visible on setup (BS)
         public long nbMomentumTraders = 50;
 
         @Input(name = "Lambda")
@@ -31,6 +32,16 @@ public class trading_challenge_ben extends AgentBasedModel<trading_challenge_ben
         public double volatilityInfo = 0.001;
 
         public double informationSignal;
+
+        @Input(name = "short-term moving average lock-back period (ticks)")
+        public long lockback_short = 7;
+
+        @Input(name = "long-term moving average lock-back period (ticks)")
+        public long lockback_long = 21;
+
+        @Input(name = "prob for trading for mom-traders (0..1)")
+        public double probMomTrade = 0.5;
+
     }
 
     { // empty class initializer, should be picked up by overridden "init"
@@ -58,7 +69,7 @@ public class trading_challenge_ben extends AgentBasedModel<trading_challenge_ben
 
         traderGroup.fullyConnected(marketGroup, Links.TraderMktLink.class);
         marketGroup.fullyConnected(traderGroup, Links.MktTraderLink.class);
-        // link momentum traders as well (same link types as before)
+        // link momentum traders as well
         momentumTraderGroup.fullyConnected(marketGroup, Links.MomentumTraderMktLink.class);
         marketGroup.fullyConnected(momentumTraderGroup, Links.MktMomentumTraderLink.class);
 
@@ -72,9 +83,14 @@ public class trading_challenge_ben extends AgentBasedModel<trading_challenge_ben
         getGlobals().informationSignal = rng.gaussian(0.0, getGlobals().volatilityInfo).sample();
 
         run(
-                Trader.processInformation(),
+                Split.create(
+                        Trader.processInformation(),
+                        MomentumTrader.processInformation()),
                 Market.calcPriceImpact(),
-                Trader.updateThreshold()
+                Split.create(
+                        Trader.updateThreshold(),
+                        MomentumTrader.storeMarketPrice())
+
         );
     }
 }

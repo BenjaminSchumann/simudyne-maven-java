@@ -16,6 +16,7 @@ public class Main {
   public static void main(String[] args) {
     Server.register("Trading Model", TradingModel.class);
     Server.register("Trading challenge", trading_challenge_ben.class);
+    /*
     Server.register("Mortgage Model", MortgageModel.class);
     Server.register("Credit Card Model", CreditCardModel.class);
     Server.register("Continuous Double Auction Model", CDAModel.class);
@@ -26,7 +27,7 @@ public class Main {
     Server.register("Schelling Segregation Model", SchellingModel.class);
     Server.register("Forest Fire Model", ForestFireModel.class);
     Server.register("Gai-Kapadia Model", GaiKapadiaModel.class);
-
+    */
     Server.run(args);
   }
 }
