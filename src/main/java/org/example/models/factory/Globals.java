@@ -8,4 +8,6 @@ public final class Globals extends GlobalState {
 
     @Input(name = "Initial products")
     public int numInitialProducts = 1000;
+
+    public boolean systemFinished = false;
 }

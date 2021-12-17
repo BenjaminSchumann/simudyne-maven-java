@@ -30,11 +30,17 @@ public class Conveyor extends Agent<Globals> {
     public static  Action<Conveyor> sendProduct() {
         return Action.create(Conveyor.class, currConveyor -> {
             if (currConveyor.getMessageOfType(Messages.Msg_ReadyForProduct.class) != null) { // got a msg actually
-                Product oldestProduct = currConveyor.queue.removeFirst();
-                if (oldestProduct != null) {
+                if (currConveyor.queue.size() > 0) { // got more
+                    Product oldestProduct = currConveyor.queue.removeFirst();
                     currConveyor.getLongAccumulator("queueLength").add(-1);
+                    // send oldest product to downstream machine
                     currConveyor.getLinks(Links.Link_ConveyorToMachine.class).
-                            send(Messages.Msg_ProductForMachine.class); // TODO does this send new Product to Machine?
+                            send(Messages.Msg_ProductForMachine.class, (message, link) -> {
+                                message.product = oldestProduct;
+                            });
+                } else {
+                    System.out.println("Conveyor has queue size="+currConveyor.queue.size()+" at tick "+currConveyor.getContext().getTick());
+                    currConveyor.getGlobals().systemFinished = true; // trigger model end
                 }
             }
         });

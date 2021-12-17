@@ -5,8 +5,8 @@ import simudyne.core.abm.Group;
 import simudyne.core.annotations.ModelSettings;
 import simudyne.core.annotations.Variable;
 
+@ModelSettings(timeUnit = "SECONDS")
 public class Factory extends AgentBasedModel<Globals> {
-    // "init"
     @Override
     public void init() {
         // create global outputs
@@ -22,7 +22,7 @@ public class Factory extends AgentBasedModel<Globals> {
 
     @Override
     public void setup() {
-        // create agent groups here
+        // create agent groups here. Agent indeces created sequentially across groups
         Group<Machine> myMachine = generateGroup(Machine.class, 1);
         Group<Conveyor> myConveyor = generateGroup(Conveyor.class, 1 /*, currConv.createProducts*/);
 
@@ -52,5 +52,8 @@ public class Factory extends AgentBasedModel<Globals> {
                 // 3. machines receive msg with product -> await next tick
                 Machine.prepareNextTick()
         );
+        if (getGlobals().systemFinished) { // triggered if all empty
+            System.exit(0);
+        }
     }
 }

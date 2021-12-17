@@ -27,8 +27,9 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> finishProduct() {
         return Action.create(Machine.class, currMachine  -> {
-            if (currMachine.currentProduct == null) {
-                logger.error("Could not finish product as machine had none");
+            if (currMachine.currentProduct == null && currMachine.getContext().getTick() > 0) { // actually started for good
+                logger.error("Machine has no product to finish at tick "+currMachine.getContext().getTick());
+                currMachine.getGlobals().systemFinished = true; // flag to stop
                 //System.exit(0); // terminate process
             }
             currMachine.currentProduct = null; // destroy product todo how can we destroy Product agent for good
@@ -43,7 +44,7 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> prepareNextTick() {
         return Action.create(Machine.class, currMachine  -> {
-            Product nextProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).getBody();
+            Product nextProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).product;
             if (nextProduct != null) {
                 currMachine.startProduct(nextProduct);
             }
