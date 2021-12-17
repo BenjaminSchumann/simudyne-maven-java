@@ -16,7 +16,8 @@ public class Factory extends AgentBasedModel<Globals> {
         // load all agents
         registerAgentTypes(Machine.class, Conveyor.class);
         // load all links
-        registerLinkTypes(Links.NormalLink.class, Links.LinkMachineToConveyor.class);
+        registerLinkTypes(  Links.Link_MachineToConveyor.class,
+                            Links.Link_ConveyorToMachine.class);
     }
 
     @Override
@@ -26,8 +27,8 @@ public class Factory extends AgentBasedModel<Globals> {
         Group<Conveyor> myConveyor = generateGroup(Conveyor.class, 1 /*, currConv.createProducts*/);
 
         // link agents here
-        myMachine.fullyConnected(myConveyor, Links.LinkMachineToConveyor.class); // machine knows conveyor
-        myConveyor.fullyConnected(myMachine, Links.NormalLink.class); // conveyor knows machine
+        myMachine.fullyConnected(myConveyor, Links.Link_MachineToConveyor.class); // machine knows conveyor
+        myConveyor.fullyConnected(myMachine, Links.Link_ConveyorToMachine.class); // conveyor knows machine
 
         super.setup(); // final Simudyne setup
     }
@@ -44,7 +45,12 @@ public class Factory extends AgentBasedModel<Globals> {
         );
         // sequence is crucial here, consider Splits
         run(
-                Machine.finishProduct()
+                // 1. machines finish products -> send msg to conveyors for more
+                Machine.finishProduct(),
+                // 2. conveyors receive msg -> send msg with next product to machine
+                Conveyor.sendProduct(),
+                // 3. machines receive msg with product -> await next tick
+                Machine.prepareNextTick()
         );
     }
 }

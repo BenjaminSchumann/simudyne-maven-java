@@ -33,27 +33,24 @@ public class Machine extends Agent<Globals> {
             }
             currMachine.currentProduct = null; // destroy product todo how can we destroy Product agent for good
             currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
-            currMachine.pullNextProduct();
-            logger.info("Machine pulled next product at tick "+currMachine.getContext().getTick());
+            // tell upstream conveyor to send next product
+            currMachine.getLinks(Links.Link_MachineToConveyor.class).
+                    send(Messages.Msg_ReadyForProduct.class);
+        });
+    }
+    /**
+     * Prepare machine for next tick
+     */
+    public static  Action<Machine> prepareNextTick() {
+        return Action.create(Machine.class, currMachine  -> {
+            Product nextProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).getBody();
+            if (nextProduct != null) {
+                currMachine.startProduct(nextProduct);
+            }
         });
     }
 
     // LOCAL FUNCTIONS
-
-    /**
-     * Try to pull next product from upstream conveyor. If it has at least 1 product in queue, removes it and starts machining it
-     */
-    public void pullNextProduct() {
-        if (currentProduct != null) {
-            logger.error("Tried to pull a product while machine still had a previous product, not possible");
-            return;
-        }
-        if (getLinks(Links.LinkMachineToConveyor.class).get(0).queue.size() > 0) { // conveyor queue not yet empty
-            Product oldestProduct = getLinks(Links.LinkMachineToConveyor.class).get(0).queue.removeFirst(); // hardcoded for 1st
-            startProduct(oldestProduct);
-            getLongAccumulator("queueLength").add(-1); // reduce queue
-        }
-    }
     /**
      * Start machining given product
      * @param productToStart the product to start at this machine
