@@ -21,6 +21,7 @@ public class Machine extends Agent<Globals> {
     public Conveyor conveyorUpstream;
 
     // ACTIONS
+
     /**
      * Initialize machine by filling its 1 slot with a product
      */
