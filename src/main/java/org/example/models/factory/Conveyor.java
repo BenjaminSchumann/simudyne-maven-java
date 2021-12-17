@@ -5,12 +5,23 @@ import org.slf4j.LoggerFactory;
 import simudyne.core.abm.Action;
 import simudyne.core.abm.Agent;
 
+import javax.crypto.Mac;
 import java.util.LinkedList;
 
 public class Conveyor extends Agent<Globals> {
     private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
-    // define vars
+    /**
+     * FIFO queue of all products currently queuing in this conveyor
+     */
     private LinkedList<Product> queue = new LinkedList<>();
+    /**
+     * Which machine feeds this conveyor? Null if this is the initial conveyor in the system
+     */
+    public Machine machineUpstream;
+    /**
+     * machine pulling products from this conveyor when it is ready
+     */
+    public Machine machineDownstream;
 
     /**
      * Initialize conveyor queue with given number of products. Only call on first step

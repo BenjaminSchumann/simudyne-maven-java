@@ -11,6 +11,14 @@ public class Machine extends Agent<Globals> {
      * product currently processed at this machine. Null if none here
      */
     private Product currentProduct = null;
+    /**
+     * Which conveyor will take products finished at this machine. Null if this is the last machine
+     */
+    public Conveyor conveyorDownstream;
+    /**
+     * What conveyor lives in front of this machine?
+     */
+    public Conveyor conveyorUpstream;
 
     // ACTIONS
     /**
