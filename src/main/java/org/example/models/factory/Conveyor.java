@@ -1,9 +1,12 @@
 package org.example.models.factory;
 
+import com.google.errorprone.annotations.Var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import simudyne.core.abm.Action;
 import simudyne.core.abm.Agent;
+import simudyne.core.annotations.Constant;
+import simudyne.core.annotations.Variable;
 
 import javax.crypto.Mac;
 import java.util.LinkedList;
@@ -22,6 +25,11 @@ public class Conveyor extends Agent<Globals> {
      * machine pulling products from this conveyor when it is ready
      */
     public Machine machineDownstream;
+    @Constant
+    String name; // loaded from csv
+
+    @Variable
+    public int queueLength = 0;
 
     /**
      * Initialize conveyor queue with given number of products. Only call on first step
@@ -32,6 +40,7 @@ public class Conveyor extends Agent<Globals> {
             for (int i=0; i<numProducts; i++) {
                 currConveyor.queue.addLast(new Product());
                 currConveyor.getLongAccumulator("queueLength").add(1);
+                currConveyor.queueLength ++;
             }
         });
     }
@@ -44,8 +53,9 @@ public class Conveyor extends Agent<Globals> {
                 if (currConveyor.queue.size() > 0) { // got more
                     Product oldestProduct = currConveyor.queue.removeFirst();
                     currConveyor.getLongAccumulator("queueLength").add(-1);
+                    currConveyor.queueLength --;
                     // send oldest product to downstream machine
-                    currConveyor.getLinks(Links.Link_ConveyorToMachine.class).
+                    currConveyor.getLinks(Links.Link_ConveyorToDownstreamMachine.class).
                             send(Messages.Msg_ProductForMachine.class, (message, link) -> {
                                 message.product = oldestProduct;
                             });

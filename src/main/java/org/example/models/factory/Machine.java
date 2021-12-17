@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import simudyne.core.abm.Action;
 import simudyne.core.abm.Agent;
+import simudyne.core.annotations.Constant;
+import simudyne.core.annotations.Variable;
 
 public class Machine extends Agent<Globals> {
     private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
@@ -19,6 +21,8 @@ public class Machine extends Agent<Globals> {
      * What conveyor lives in front of this machine?
      */
     public Conveyor conveyorUpstream;
+    @Constant
+    String name; // loaded from csv
 
     // ACTIONS
 
@@ -36,16 +40,18 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> finishProduct() {
         return Action.create(Machine.class, currMachine  -> {
-            if (currMachine.currentProduct == null && currMachine.getContext().getTick() > 0) { // actually started for good
-                logger.error("Machine has no product to finish at tick "+currMachine.getContext().getTick());
-                currMachine.getGlobals().systemFinished = true; // flag to stop
-                //System.exit(0); // terminate process
+            // send to downstream conveyor (if there is one)
+            if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
+                // machine has downstream conveyor
+                currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).
+                        send(Messages.Msg_ReadyForProduct.class);
             }
+
             currMachine.currentProduct = null; // destroy product todo how can we destroy Product agent for good
             currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
             // tell upstream conveyor to send next product
-            currMachine.getLinks(Links.Link_MachineToConveyor.class).
-                    send(Messages.Msg_ReadyForProduct.class);
+
+
         });
     }
     /**
