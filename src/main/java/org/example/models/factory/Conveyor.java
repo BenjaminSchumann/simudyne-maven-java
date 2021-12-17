@@ -10,14 +10,7 @@ import java.util.LinkedList;
 public class Conveyor extends Agent<Globals> {
     private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
     // define vars
-    private LinkedList<Product> queue = new LinkedList<>();
-
-    public static Action<Conveyor> someConveyorActio() {
-        return Action.create(Conveyor.class, currConveyor -> {
-           // do action code here with CurrConveyor
-            System.out.println("conveyor did some action on tick "+currConveyor.getContext().getTick());
-        });
-    }
+    // private LinkedList<Product> queue = new LinkedList<>();
 
     /**
      * Initialize conveyor queue with given number of products. Only call on first step
@@ -25,11 +18,12 @@ public class Conveyor extends Agent<Globals> {
      */
     public static  Action<Conveyor> initializeProducts(int numProducts) {
         return Action.create(Conveyor.class, currConveyor -> {
+            logger.info("curr conv links size ="+currConveyor.getLinks().size());
             for (int i=0; i<numProducts; i++) {
-                currConveyor.queue.addLast(new Product());
+                //currConveyor.getLinks(Links.LinkMachineToConveyor.class).get(0).queue.addLast(new Product());
+                //currConveyor.getLongAccumulator("queueLength").add(1);
             }
-            // logger.info("Created "+currConveyor.queue.size()+" products");
+            logger.info("Created "+currConveyor.getLinks(Links.LinkMachineToConveyor.class).get(0).queue.size()+" products");
         });
-
     }
 }
