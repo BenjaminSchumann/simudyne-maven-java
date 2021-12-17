@@ -38,20 +38,21 @@ public class Machine extends Agent<Globals> {
     /**
      * Finish current product (if there is one) and try to pull next product from upstream conveyor
      */
-    public static  Action<Machine> finishProduct() {
+    public static  Action<Machine> sendDownstream() {
         return Action.create(Machine.class, currMachine  -> {
+
+            currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
             // send to downstream conveyor (if there is one)
             if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
-                // machine has downstream conveyor
+                // machine has downstream conveyor: send product there
                 currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).
-                        send(Messages.Msg_ReadyForProduct.class);
+                        send(Messages.Msg_ProductForConveyor.class, (message, link) -> {
+                            message.product = currMachine.currentProduct;
+                        });
+            } else { // this is the last machine, nothing downstream
+                 // destroy product todo how can we destroy Product agent for good
             }
-
-            currMachine.currentProduct = null; // destroy product todo how can we destroy Product agent for good
-            currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
-            // tell upstream conveyor to send next product
-
-
+            currMachine.currentProduct = null;
         });
     }
     /**

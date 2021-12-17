@@ -39,7 +39,18 @@ public class Conveyor extends Agent<Globals> {
         return Action.create(Conveyor.class, currConveyor -> {
             for (int i=0; i<numProducts; i++) {
                 currConveyor.queue.addLast(new Product());
-                currConveyor.getLongAccumulator("queueLength").add(1);
+                currConveyor.queueLength ++;
+            }
+        });
+    }
+    /**
+     * Add any products sent via message from upstream machine to your queue
+     */
+    public static  Action<Conveyor> receiveProductForQueue() {
+        return Action.create(Conveyor.class, currConveyor -> {
+            if (currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class) != null) { // got a msg actually
+                Product arrivingProduct = currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class).product;
+                currConveyor.queue.addLast(arrivingProduct);
                 currConveyor.queueLength ++;
             }
         });
@@ -52,7 +63,6 @@ public class Conveyor extends Agent<Globals> {
             if (currConveyor.getMessageOfType(Messages.Msg_ReadyForProduct.class) != null) { // got a msg actually
                 if (currConveyor.queue.size() > 0) { // got more
                     Product oldestProduct = currConveyor.queue.removeFirst();
-                    currConveyor.getLongAccumulator("queueLength").add(-1);
                     currConveyor.queueLength --;
                     // send oldest product to downstream machine
                     currConveyor.getLinks(Links.Link_ConveyorToDownstreamMachine.class).

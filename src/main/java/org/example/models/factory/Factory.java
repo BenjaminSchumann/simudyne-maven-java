@@ -12,7 +12,6 @@ public class Factory extends AgentBasedModel<Globals> {
     public void init() {
         // create global outputs
         createLongAccumulator("numProdsDone", "number of products done");
-        createLongAccumulator("queueLength", "number of products in queue");
 
         // load all agents
         registerAgentTypes( Machine.class,
@@ -59,12 +58,12 @@ public class Factory extends AgentBasedModel<Globals> {
         );
         // sequence is crucial here, consider Splits
         run(
-                // 1. machines finish products -> send msg to conveyors for more
-                //Machine.finishProduct(),
-                // 2. conveyors receive msg -> send msg with next product to machine
-                //Conveyor.sendProduct(),
-                // 3. machines receive msg with product -> await next tick
-                // Machine.prepareNextTick()
+                // 1. machine finishes product -> push downstream
+                Machine.sendDownstream(),
+                // 2. conveyors receive msg ->
+                Conveyor.receiveProductForQueue()
+                // 3. machine flags readiness to upstream conveyor
+                // 4. conveyor pushes product to downstream machine
         );
         if (getGlobals().systemFinished) { // triggered if all empty
             System.exit(0);
