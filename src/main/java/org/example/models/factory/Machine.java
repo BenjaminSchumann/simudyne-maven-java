@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import simudyne.core.abm.Action;
 import simudyne.core.abm.Agent;
 import simudyne.core.annotations.Constant;
-import simudyne.core.annotations.Variable;
 
 public class Machine extends Agent<Globals> {
     private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
@@ -13,14 +12,6 @@ public class Machine extends Agent<Globals> {
      * product currently processed at this machine. Null if none here
      */
     private Product currentProduct = null;
-    /**
-     * Which conveyor will take products finished at this machine. Null if this is the last machine
-     */
-    public Conveyor conveyorDownstream;
-    /**
-     * What conveyor lives in front of this machine?
-     */
-    public Conveyor conveyorUpstream;
     @Constant
     String name; // loaded from csv
 
@@ -40,8 +31,7 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> sendDownstream() {
         return Action.create(Machine.class, currMachine  -> {
-
-            currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
+            System.out.println("Machine "+currMachine.getID()+" starts sendDownstream on tick "+currMachine.getContext().getTick());
             // send to downstream conveyor (if there is one)
             if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
                 // machine has downstream conveyor: send product there
@@ -50,33 +40,35 @@ public class Machine extends Agent<Globals> {
                             message.product = currMachine.currentProduct;
                         });
             } else { // this is the last machine, nothing downstream
+                // count global #products done
+                currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
                  // destroy product todo how can we destroy Product agent for good
             }
             currMachine.currentProduct = null;
         });
     }
     /**
-     * Prepare machine for next tick
+     * tell upstream machine about empty slot -> ready for next product
      */
-    public static  Action<Machine> prepareNextTick() {
+    public static  Action<Machine> flagUpstream() {
         return Action.create(Machine.class, currMachine  -> {
-            Product nextProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).product;
-            if (nextProduct != null) {
-                currMachine.startProduct(nextProduct);
+            System.out.println("Machine "+currMachine.getID()+" starts flagUpstream on tick "+currMachine.getContext().getTick());
+            if (currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).size() > 0) {
+                currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).
+                        send(Messages.Msg_ReadyForProduct.class);
             }
         });
     }
-
-    // LOCAL FUNCTIONS
     /**
-     * Start machining given product
-     * @param productToStart the product to start at this machine
+     * Add any products sent via message from upstream machine to your queue
      */
-    public void startProduct(Product productToStart) {
-        if (currentProduct != null) {
-            logger.error("Tried to start a product while machine still had a previous product, not possible");
-            return;
-        }
-        currentProduct = productToStart;
+    public static  Action<Machine> receiveProductForWork() {
+        return Action.create(Machine.class, currMachine -> {
+            System.out.println("Machine "+currMachine.getID()+" starts receiveProductForWork on tick "+currMachine.getContext().getTick());
+            if (currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class) != null) { // got a msg actually
+                Product arrivingProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).product;
+                currMachine.currentProduct = arrivingProduct;
+            }
+        });
     }
 }

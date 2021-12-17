@@ -17,17 +17,8 @@ public class Conveyor extends Agent<Globals> {
      * FIFO queue of all products currently queuing in this conveyor
      */
     private LinkedList<Product> queue = new LinkedList<>();
-    /**
-     * Which machine feeds this conveyor? Null if this is the initial conveyor in the system
-     */
-    public Machine machineUpstream;
-    /**
-     * machine pulling products from this conveyor when it is ready
-     */
-    public Machine machineDownstream;
     @Constant
     String name; // loaded from csv
-
     @Variable
     public int queueLength = 0;
 
@@ -48,6 +39,7 @@ public class Conveyor extends Agent<Globals> {
      */
     public static  Action<Conveyor> receiveProductForQueue() {
         return Action.create(Conveyor.class, currConveyor -> {
+            System.out.println("Conveyor "+currConveyor.getID()+" starts receiveProductForQueue on tick "+currConveyor.getContext().getTick());
             if (currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class) != null) { // got a msg actually
                 Product arrivingProduct = currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class).product;
                 currConveyor.queue.addLast(arrivingProduct);
@@ -56,10 +48,12 @@ public class Conveyor extends Agent<Globals> {
         });
     }
     /**
-     * Sends oldest product to connected machine, if requested
+     * Sends oldest product to downstream machine, if requested
      */
-    public static  Action<Conveyor> sendProduct() {
+    public static  Action<Conveyor> pushProductDownstream() {
         return Action.create(Conveyor.class, currConveyor -> {
+            System.out.println("Conveyor "+currConveyor.getID()+" starts pushProductDownstream on tick "+currConveyor.getContext().getTick());
+
             if (currConveyor.getMessageOfType(Messages.Msg_ReadyForProduct.class) != null) { // got a msg actually
                 if (currConveyor.queue.size() > 0) { // got more
                     Product oldestProduct = currConveyor.queue.removeFirst();
@@ -69,9 +63,7 @@ public class Conveyor extends Agent<Globals> {
                             send(Messages.Msg_ProductForMachine.class, (message, link) -> {
                                 message.product = oldestProduct;
                             });
-                } else {
-                    System.out.println("Conveyor has queue size="+currConveyor.queue.size()+" at tick "+currConveyor.getContext().getTick());
-                    currConveyor.getGlobals().systemFinished = true; // trigger model end
+                } else { // no more products to send, do nothing
                 }
             }
         });

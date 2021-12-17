@@ -50,7 +50,6 @@ public class Factory extends AgentBasedModel<Globals> {
     public void step() {
 
         super.step(); // FIRST: do Simudyne stepping
-
         // seed model with initial products (only on first step)
         firstStep(
                 Conveyor.initializeProducts(getGlobals().numInitialProducts),
@@ -61,9 +60,13 @@ public class Factory extends AgentBasedModel<Globals> {
                 // 1. machine finishes product -> push downstream
                 Machine.sendDownstream(),
                 // 2. conveyors receive msg ->
-                Conveyor.receiveProductForQueue()
+                Conveyor.receiveProductForQueue(),
                 // 3. machine flags readiness to upstream conveyor
+                Machine.flagUpstream(),
                 // 4. conveyor pushes product to downstream machine
+                Conveyor.pushProductDownstream(),
+                // 5. machine receives product from upstream for next tick
+                Machine.receiveProductForWork()
         );
         if (getGlobals().systemFinished) { // triggered if all empty
             System.exit(0);
