@@ -22,28 +22,34 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> initializeProduct() {
         return Action.create(Machine.class, currMachine  -> {
-            currMachine.currentProduct = new Product();
+            double cycleTime_ticks = currMachine.getPrng().uniform(
+                                        currMachine.getGlobals().cycleTimeMin_ticks,
+                                        currMachine.getGlobals().cycleTimeMax_ticks).sample();
+            currMachine.currentProduct = new Product(cycleTime_ticks);
+            currMachine.currentProduct.startMachining(currMachine.getContext().getTick());
             //logger.info("Filled machine with 1 product");
         });
     }
     /**
-     * Finish current product (if there is one) and try to pull next product from upstream conveyor
+     * Finish current product (if there is one and it spent enough time here) and try to pull next product from upstream conveyor
      */
     public static  Action<Machine> pushDownstreamAndFlagUpstream() {
         return Action.create(Machine.class, currMachine  -> {
-            if (currMachine.currentProduct != null) { // actually finished a product
-                // send to downstream conveyor (if there is one)
-                if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
-                    // machine has downstream conveyor: send product there
+            if (currMachine.currentProduct != null) { // actually has a product it works on
+                if (currMachine.isProductFinished()) {
+                    // send to downstream conveyor (if there is one)
+                    if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
+                        // machine has downstream conveyor: send product there
                         currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).
                                 send(Messages.Msg_ProductForConveyor.class, (message, link) -> {
                                     message.product = currMachine.currentProduct;
                                 });
-                } else { // this is the last machine, nothing downstream
-                    // count global #products done
-                    currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
-                }
-                currMachine.currentProduct = null;
+                    } else { // this is the last machine, nothing downstream
+                        // count global #products done
+                        currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
+                    }
+                    currMachine.currentProduct = null;
+                } // else let machine continue for more ticks with current product
             }
 
             // flag upstream
@@ -63,7 +69,21 @@ public class Machine extends Agent<Globals> {
             if (currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class) != null) { // got a msg actually
                 Product arrivingProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).product;
                 currMachine.currentProduct = arrivingProduct;
+                currMachine.currentProduct.startMachining(currMachine.getContext().getTick());
             }
         });
+    }
+
+    /**
+     * @return true if this machine has a product and it has been processed as long as required for its cycle time. False otherwise
+     */
+    private boolean isProductFinished() {
+        if (currentProduct != null) {
+            long ticksSoFar = getContext().getTick() - currentProduct.startedAt_tick;
+            if (ticksSoFar >= currentProduct.cycleTime_ticks) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -29,7 +29,10 @@ public class Conveyor extends Agent<Globals> {
     public static  Action<Conveyor> initializeProducts(int numProducts) {
         return Action.create(Conveyor.class, currConveyor -> {
             for (int i=0; i<numProducts; i++) {
-                currConveyor.queue.addLast(new Product());
+                double cycleTime_ticks = currConveyor.getPrng().uniform(
+                        currConveyor.getGlobals().cycleTimeMin_ticks,
+                        currConveyor.getGlobals().cycleTimeMax_ticks).sample();
+                currConveyor.queue.addLast(new Product(cycleTime_ticks));
                 currConveyor.queueLength ++;
             }
         });
@@ -52,7 +55,10 @@ public class Conveyor extends Agent<Globals> {
                     //logger.info("Conveyor "+currConveyor.getID()+" created "+numNewProductsThisTick+" new products on tick "+currConveyor.getContext().getTick());
                 }
                 for (int i=0; i<numNewProductsThisTick; i++) {
-                    currConveyor.queue.addLast(new Product());
+                    double cycleTime_ticks = currConveyor.getPrng().uniform(
+                            currConveyor.getGlobals().cycleTimeMin_ticks,
+                            currConveyor.getGlobals().cycleTimeMax_ticks).sample();
+                    currConveyor.queue.addLast(new Product(cycleTime_ticks));
                     currConveyor.queueLength ++;
                 }
 

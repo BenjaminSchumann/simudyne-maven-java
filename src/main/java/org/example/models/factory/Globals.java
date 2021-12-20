@@ -12,6 +12,14 @@ public final class Globals extends GlobalState {
     @Input(name = "Arrival rate (products/min)")
     public double rateNewProducts = 1000;
 
+    @Input(name = "min cycle time (ms)")
+    public double cycleTimeMin_ticks = 1;
+
+    @Input(name = "max cycle time (ms)")
+    public double cycleTimeMax_ticks = 1000;
+
+
+
 
     public boolean systemFinished = false;
 

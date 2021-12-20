@@ -9,12 +9,16 @@ import simudyne.core.abm.Agent;
  * @since 2021_12_16
  */
 public class Product  {
-    // define vars
-    private double cycleTime_ticks = 1.;
 
-    public Product() {
+    public double cycleTime_ticks;
+    public long startedAt_tick; // when did product start work on a machine, in ticks. Reset after each machine
 
+    public Product(double cycleTime_ticks) {
+        this.cycleTime_ticks = cycleTime_ticks;
     }
 
     // local functions
+    public void startMachining(long startingAt_tick){
+        startingAt_tick = startingAt_tick;
+    }
 }
