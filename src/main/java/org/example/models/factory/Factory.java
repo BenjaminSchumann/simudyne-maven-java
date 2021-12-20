@@ -2,11 +2,12 @@ package org.example.models.factory;
 
 import simudyne.core.abm.AgentBasedModel;
 import simudyne.core.abm.Group;
+import simudyne.core.abm.Sequence;
 import simudyne.core.annotations.ModelSettings;
 import simudyne.core.annotations.Variable;
 import simudyne.core.data.CSVSource;
 
-@ModelSettings(timeUnit = "SECONDS")
+@ModelSettings(timeUnit = "MILLIS")
 public class Factory extends AgentBasedModel<Globals> {
     @Override
     public void init() {
@@ -14,8 +15,7 @@ public class Factory extends AgentBasedModel<Globals> {
         createLongAccumulator("numProdsDone", "number of products done");
 
         // load all agents
-        registerAgentTypes( Machine.class,
-                            Conveyor.class);
+        registerAgentTypes( Conveyor.class, Machine.class);
         // load all links
         registerLinkTypes(  Links.Link_MachineToDownstreamConveyor.class,
                             Links.Link_MachineToUpstreamConveyor.class,
@@ -25,11 +25,11 @@ public class Factory extends AgentBasedModel<Globals> {
 
     @Override
     public void setup() {
-        // create agents
-        CSVSource machinesSource = new CSVSource("C:\\Users\\User\\Documents\\My GitHub repositories\\Simudyne repo\\simudyne-maven-java\\data\\machines.csv");
-        Group<Machine> machines = loadGroup(Machine.class, machinesSource);
+        // create agents: do conveyors first so their Simudyne IDs are same as in csv files
         CSVSource conveyorSource = new CSVSource("C:\\Users\\User\\Documents\\My GitHub repositories\\Simudyne repo\\simudyne-maven-java\\data\\conveyors.csv");
         Group<Conveyor> conveyors = loadGroup(Conveyor.class, conveyorSource);
+        CSVSource machinesSource = new CSVSource("C:\\Users\\User\\Documents\\My GitHub repositories\\Simudyne repo\\simudyne-maven-java\\data\\machines.csv");
+        Group<Machine> machines = loadGroup(Machine.class, machinesSource);
 
         // load link data
         CSVSource source_MachineToDownstreamConveyors = new CSVSource("C:\\Users\\User\\Documents\\My GitHub repositories\\Simudyne repo\\simudyne-maven-java\\data\\links_machines_to_downstream_conveyors.csv");
@@ -47,8 +47,7 @@ public class Factory extends AgentBasedModel<Globals> {
     }
 
     @Override
-    public void step() {
-
+    public void step() { // Each step is 1ms
         super.step(); // FIRST: do Simudyne stepping
         // seed model with initial products (only on first step)
         firstStep(
@@ -57,17 +56,18 @@ public class Factory extends AgentBasedModel<Globals> {
         );
         // sequence is crucial here, consider Splits
         run(
-                // 1. machine finishes product -> push downstream
-                Machine.sendDownstream(),
-                // 2. conveyors receive msg ->
-                Conveyor.receiveProductForQueue(),
-                // 3. machine flags readiness to upstream conveyor
-                Machine.flagUpstream(),
-                // 4. conveyor pushes product to downstream machine
-                Conveyor.pushProductDownstream(),
-                // 5. machine receives product from upstream for next tick
+                // 1. machine finishes product -> push downstream AND flag upstream that you have space (must be in 1 func)
+                Machine.pushDownstreamAndFlagUpstream(),
+                // 2. conveyors: get products from upstream machine. Push out oldest if downstream is free (must be in 1 func)
+                Conveyor.receiveProductAndPushOutOldest(),
+                // 3. machine receives product from upstream for next tick
                 Machine.receiveProductForWork()
         );
+        run( // ensure to run this always (even if no msg passed)
+                Conveyor.addNewProducts()
+        );
+
+
         if (getGlobals().systemFinished) { // triggered if all empty
             System.exit(0);
         }

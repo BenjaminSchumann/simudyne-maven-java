@@ -29,42 +29,37 @@ public class Machine extends Agent<Globals> {
     /**
      * Finish current product (if there is one) and try to pull next product from upstream conveyor
      */
-    public static  Action<Machine> sendDownstream() {
+    public static  Action<Machine> pushDownstreamAndFlagUpstream() {
         return Action.create(Machine.class, currMachine  -> {
-            System.out.println("Machine "+currMachine.getID()+" starts sendDownstream on tick "+currMachine.getContext().getTick());
-            // send to downstream conveyor (if there is one)
-            if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
-                // machine has downstream conveyor: send product there
-                currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).
-                        send(Messages.Msg_ProductForConveyor.class, (message, link) -> {
-                            message.product = currMachine.currentProduct;
-                        });
-            } else { // this is the last machine, nothing downstream
-                // count global #products done
-                currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
-                 // destroy product todo how can we destroy Product agent for good
+            if (currMachine.currentProduct != null) { // actually finished a product
+                // send to downstream conveyor (if there is one)
+                if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
+                    // machine has downstream conveyor: send product there
+                        currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).
+                                send(Messages.Msg_ProductForConveyor.class, (message, link) -> {
+                                    message.product = currMachine.currentProduct;
+                                });
+                } else { // this is the last machine, nothing downstream
+                    // count global #products done
+                    currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
+                }
+                currMachine.currentProduct = null;
             }
-            currMachine.currentProduct = null;
-        });
-    }
-    /**
-     * tell upstream machine about empty slot -> ready for next product
-     */
-    public static  Action<Machine> flagUpstream() {
-        return Action.create(Machine.class, currMachine  -> {
-            System.out.println("Machine "+currMachine.getID()+" starts flagUpstream on tick "+currMachine.getContext().getTick());
+
+            // flag upstream
             if (currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).size() > 0) {
                 currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).
                         send(Messages.Msg_ReadyForProduct.class);
             }
         });
     }
+
     /**
      * Add any products sent via message from upstream machine to your queue
      */
     public static  Action<Machine> receiveProductForWork() {
         return Action.create(Machine.class, currMachine -> {
-            System.out.println("Machine "+currMachine.getID()+" starts receiveProductForWork on tick "+currMachine.getContext().getTick());
+            // System.out.println("Machine "+currMachine.getID()+" starts receiveProductForWork on tick "+currMachine.getContext().getTick());
             if (currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class) != null) { // got a msg actually
                 Product arrivingProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).product;
                 currMachine.currentProduct = arrivingProduct;
