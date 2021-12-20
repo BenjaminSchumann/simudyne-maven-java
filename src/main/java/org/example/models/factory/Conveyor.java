@@ -91,4 +91,6 @@ public class Conveyor extends Agent<Globals> {
         });
     }
 
+    // LOCAL FUNCTIONS
+
 }
