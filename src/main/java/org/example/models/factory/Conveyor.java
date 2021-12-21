@@ -77,15 +77,13 @@ public class Conveyor extends Agent<Globals> {
     public static  Action<Conveyor> receiveProductAndPushOutOldest() {
         return Action.create(Conveyor.class, currConveyor -> {
             // System.out.println("Conveyor "+currConveyor.getID()+" starts receiveProductForQueue on tick "+currConveyor.getContext().getTick());
-            if (currConveyor.hasMessageOfType(Messages.Msg_ProductForConveyor.class)) { // got a msg actually
-                Product arrivingProduct = currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class).product;
-                currConveyor.enterQueue(arrivingProduct);
-            }
+            // FIRST: Push out oldest product, if requested from downstream machine
             if (currConveyor.hasMessageOfType(Messages.Msg_ReadyForProduct.class)) { // got a msg actually
                 // List<Messages.Msg_ReadyForProduct> lsit =  currConveyor.getMessagesOfType(Messages.Msg_ReadyForProduct.class);
                 if (currConveyor.queue.size() > 0) { // got more
+                    // oldest product is actually near the edge of the conveyor ready to leave
                     Product oldestProduct = currConveyor.queue.removeFirst();
-                    currConveyor.queueLength --;
+                    currConveyor.queueLength--;
                     // send oldest product to downstream machine
                     currConveyor.getLinks(Links.Link_ConveyorToDownstreamMachine.class).
                             send(Messages.Msg_ProductForMachine.class, (message, link) -> {
@@ -93,11 +91,53 @@ public class Conveyor extends Agent<Globals> {
                             });
                 } else { // no more products to send, do nothing
                 }
+
+            }
+            // add new product from upstream if upstream machine sent some
+            if (currConveyor.hasMessageOfType(Messages.Msg_ProductForConveyor.class)) { // got a msg actually
+                Product arrivingProduct = currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class).product;
+                currConveyor.enterQueue(arrivingProduct);
+            }
+        });
+    }
+    /**
+     * move all products forward by the conveyor speed each tick
+     * Products accumulate at the end of the conveyor if not pushed out fast enough
+     * Products reaching the accumulation end only advance if conveyor pushed out some product
+     */
+    public static  Action<Conveyor> advanceAllProducts() {
+        return Action.create(Conveyor.class, currConveyor -> {
+            int index = 0;
+            Product previousProduct = null;
+            for (Product currProd : currConveyor.queue) { // from oldest to newest (assumes you already pushed out any old products downstream)
+                // move forward but do not fall conveyor edge or bump into preceeding product
+                double distToMoveForward = currConveyor.getDistanceMovable(currProd, previousProduct);
+                currProd.distanceToConveyorEnd_m -= distToMoveForward;
+                previousProduct = currProd; // flag for next loops
             }
         });
     }
 
+
     // LOCAL FUNCTIONS
+    private double getDistanceMovable(Product product, Product preceedingProduct) {
+        if (preceedingProduct == null) { // is oldest product
+            if (product.distanceToConveyorEnd_m < speed_mperms) { // would it move beyond edge now?
+                return product.distanceToConveyorEnd_m; // can only move until edge of conveyor
+            } else { // move forward by 1 tick's distance
+                return speed_mperms;
+            }
+        } else { // got a preceeding product, check its position to not bump into it
+            double edgePreceeding = preceedingProduct.distanceToConveyorEnd_m + preceedingProduct.width_m;
+            double myNewPosAtFullSpeed = product.distanceToConveyorEnd_m - speed_mperms;
+            if (myNewPosAtFullSpeed < edgePreceeding) { // Would bump into preceeding product now?
+                double distToPreceeedingProd = product.distanceToConveyorEnd_m - edgePreceeding;
+                return distToPreceeedingProd; // only move until preceeding prod edge
+            } else { // move normally forward by 1 tick's distance
+                return speed_mperms;
+            }
+        }
+    }
 
     /**
      * Call when product enters conveyor at the far end

@@ -78,7 +78,11 @@ public class Factory extends AgentBasedModel<Globals> {
                 // 3. machine receives product from upstream for next tick
                 Machine.receiveProductForWork()
         );
-        run( // ensure to run this always (even if no msg passed)
+        run ( // after adjusting conveyor queues, move all products by conveyor speed
+                Conveyor.advanceAllProducts()
+        );
+
+        run( // let new products enter the system regularly
                 Conveyor.addNewProducts()
         );
         lastStep(
