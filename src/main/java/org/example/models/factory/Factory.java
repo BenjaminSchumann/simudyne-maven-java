@@ -1,14 +1,24 @@
 package org.example.models.factory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import simudyne.core.abm.AgentBasedModel;
 import simudyne.core.abm.Group;
 import simudyne.core.abm.Sequence;
+import simudyne.core.abm.Split;
+import simudyne.core.annotations.Input;
 import simudyne.core.annotations.ModelSettings;
 import simudyne.core.annotations.Variable;
 import simudyne.core.data.CSVSource;
 
 @ModelSettings(timeUnit = "MILLIS")
 public class Factory extends AgentBasedModel<Globals> {
+    private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
+    @Input
+    public String A;
+    @Input
+    public String B;
+
     @Override
     public void init() {
         // create global outputs
@@ -51,11 +61,14 @@ public class Factory extends AgentBasedModel<Globals> {
         super.step(); // FIRST: do Simudyne stepping
         // seed model with initial products (only on first step)
         firstStep(
-                Machine.initializeProduct()
+                Split.create(
+                        Machine.initializeProduct(),
+                        Conveyor.initializeProducts(getGlobals().numInitialProducts)
+                )
         );
-        firstStep(
-                Conveyor.initializeProducts(getGlobals().numInitialProducts)
-        );
+        if (getContext().getTick() % 1000 == 0) {
+            logger.info("curr tick "+getContext().getTick());
+        }
         // sequence is crucial here, consider Splits
         run(
                 // 1. machine finishes product -> push downstream AND flag upstream that you have space (must be in 1 func)
@@ -68,10 +81,14 @@ public class Factory extends AgentBasedModel<Globals> {
         run( // ensure to run this always (even if no msg passed)
                 Conveyor.addNewProducts()
         );
-
-
-        if (getGlobals().systemFinished) { // triggered if all empty
-            System.exit(0);
-        }
+        lastStep(
+                // add actions for final outputs
+        );
     }
+    @Override
+    public void done(){
+        super.done();
+        logger.info("finished");
+    }
+
 }

@@ -35,11 +35,10 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> pushDownstreamAndFlagUpstream() {
         return Action.create(Machine.class, currMachine  -> {
-
             if (currMachine.currentProduct != null) { // actually has a product it works on
                 if (currMachine.isProductFinished()) {
                     // send to downstream conveyor (if there is one)
-                    if (currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).size() > 0) {
+                    if (currMachine.hasLinks(Links.Link_MachineToDownstreamConveyor.class)) {
                         // machine has downstream conveyor: send product there
                         currMachine.getLinks(Links.Link_MachineToDownstreamConveyor.class).
                                 send(Messages.Msg_ProductForConveyor.class, (message, link) -> {
@@ -51,13 +50,13 @@ public class Machine extends Agent<Globals> {
                     }
                     currMachine.currentProduct = null;
                     // flag upstream that you are empty now
-                    if (currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).size() > 0) {
+                    if (currMachine.hasLinks(Links.Link_MachineToUpstreamConveyor.class)) {
                         currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).
                                 send(Messages.Msg_ReadyForProduct.class);
                     }
                 } // else let machine continue for more ticks with current product
             } else{
-                logger.info("at tick "+ currMachine.getContext().getTick()+" found that machine "+currMachine.getID()+" has no prod");
+                logger.debug("at tick "+ currMachine.getContext().getTick()+" found that machine "+currMachine.getID()+" has no prod");
             }
 
         });
@@ -69,7 +68,7 @@ public class Machine extends Agent<Globals> {
     public static  Action<Machine> receiveProductForWork() {
         return Action.create(Machine.class, currMachine -> {
             // System.out.println("Machine "+currMachine.getID()+" starts receiveProductForWork on tick "+currMachine.getContext().getTick());
-            if (currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class) != null) { // got a msg actually
+            if (currMachine.hasMessageOfType(Messages.Msg_ProductForMachine.class)) { // got a msg actually
                 Product arrivingProduct = currMachine.getMessageOfType(Messages.Msg_ProductForMachine.class).product;
                 currMachine.currentProduct = arrivingProduct;
                 currMachine.currentProduct.startMachining(currMachine.getContext().getTick());

@@ -18,11 +18,4 @@ public final class Globals extends GlobalState {
     @Input(name = "max cycle time (ms)")
     public double cycleTimeMax_ticks = 80; // mean CT is about 47ms
 
-
-
-
-    public boolean systemFinished = false;
-
-
-
 }

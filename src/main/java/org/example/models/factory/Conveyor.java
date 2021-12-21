@@ -10,6 +10,7 @@ import simudyne.core.annotations.Variable;
 
 import javax.crypto.Mac;
 import java.util.LinkedList;
+import java.util.List;
 
 public class Conveyor extends Agent<Globals> {
     private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
@@ -35,7 +36,12 @@ public class Conveyor extends Agent<Globals> {
                 double cycleTime_ticks = currConveyor.getPrng().uniform(
                         currConveyor.getGlobals().cycleTimeMin_ticks,
                         currConveyor.getGlobals().cycleTimeMax_ticks).sample();
-                currConveyor.enterQueue(new Product(cycleTime_ticks));
+                // NOTE: Do not call enterQueue() as this would put products at the entry
+                Product newProduct = new Product(cycleTime_ticks);
+                currConveyor.queue.addLast(newProduct);
+                currConveyor.queueLength ++;
+                // position them correctly
+                newProduct.distanceToConveyorEnd_m = i * newProduct.width_m;
             }
             //logger.info("created "+numProducts+" in queue for conveyor "+currConveyor.getID()+": it has "+currConveyor.queue.size());
         });
@@ -51,8 +57,7 @@ public class Conveyor extends Agent<Globals> {
                 double rateNewProductsPerMS = currConveyor.getGlobals().rateNewProducts / (60.*1000.); // from "per min" to "per ms"
                 int numNewProductsThisTick = (int)Math.floor(rateNewProductsPerMS);
                 double remainder = (rateNewProductsPerMS-numNewProductsThisTick);
-                double randomValue = currConveyor.getPrng().uniform(0, 1).sample();
-                if (randomValue < remainder) {
+                if (remainder >= 1 || currConveyor.getPrng().uniform(0, 1).sample() < remainder) {
                     // add remainder only if prob checked (so "1.25" would be 1 each tick and 2 each 4 ticks)
                     numNewProductsThisTick++;
                     //logger.info("Conveyor "+currConveyor.getID()+" created "+numNewProductsThisTick+" new products on tick "+currConveyor.getContext().getTick());
@@ -63,7 +68,6 @@ public class Conveyor extends Agent<Globals> {
                             currConveyor.getGlobals().cycleTimeMax_ticks).sample();
                     currConveyor.enterQueue(new Product(cycleTime_ticks));
                 }
-
             }
         });
     }
@@ -73,11 +77,12 @@ public class Conveyor extends Agent<Globals> {
     public static  Action<Conveyor> receiveProductAndPushOutOldest() {
         return Action.create(Conveyor.class, currConveyor -> {
             // System.out.println("Conveyor "+currConveyor.getID()+" starts receiveProductForQueue on tick "+currConveyor.getContext().getTick());
-            if (currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class) != null) { // got a msg actually
+            if (currConveyor.hasMessageOfType(Messages.Msg_ProductForConveyor.class)) { // got a msg actually
                 Product arrivingProduct = currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class).product;
                 currConveyor.enterQueue(arrivingProduct);
             }
-            if (currConveyor.getMessageOfType(Messages.Msg_ReadyForProduct.class) != null) { // got a msg actually
+            if (currConveyor.hasMessageOfType(Messages.Msg_ReadyForProduct.class)) { // got a msg actually
+                // List<Messages.Msg_ReadyForProduct> lsit =  currConveyor.getMessagesOfType(Messages.Msg_ReadyForProduct.class);
                 if (currConveyor.queue.size() > 0) { // got more
                     Product oldestProduct = currConveyor.queue.removeFirst();
                     currConveyor.queueLength --;
@@ -101,5 +106,6 @@ public class Conveyor extends Agent<Globals> {
     private void enterQueue(Product product) {
         queue.addLast(product);
         queueLength ++;
+        product.distanceToConveyorEnd_m = length_m; // make product enter at the far end always
     }
 }
