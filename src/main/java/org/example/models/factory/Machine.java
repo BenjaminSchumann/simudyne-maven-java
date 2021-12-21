@@ -27,7 +27,7 @@ public class Machine extends Agent<Globals> {
                                         currMachine.getGlobals().cycleTimeMax_ticks).sample();
             currMachine.currentProduct = new Product(cycleTime_ticks);
             currMachine.currentProduct.startMachining(currMachine.getContext().getTick());
-            //logger.info("Filled machine with 1 product");
+            //logger.info("Filled machine "+currMachine.getID()+" with 1 product: "+currMachine.currentProduct.toString());
         });
     }
     /**
@@ -35,6 +35,7 @@ public class Machine extends Agent<Globals> {
      */
     public static  Action<Machine> pushDownstreamAndFlagUpstream() {
         return Action.create(Machine.class, currMachine  -> {
+
             if (currMachine.currentProduct != null) { // actually has a product it works on
                 if (currMachine.isProductFinished()) {
                     // send to downstream conveyor (if there is one)
@@ -49,14 +50,16 @@ public class Machine extends Agent<Globals> {
                         currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
                     }
                     currMachine.currentProduct = null;
+                    // flag upstream that you are empty now
+                    if (currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).size() > 0) {
+                        currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).
+                                send(Messages.Msg_ReadyForProduct.class);
+                    }
                 } // else let machine continue for more ticks with current product
+            } else{
+                logger.info("at tick "+ currMachine.getContext().getTick()+" found that machine "+currMachine.getID()+" has no prod");
             }
 
-            // flag upstream
-            if (currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).size() > 0) {
-                currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).
-                        send(Messages.Msg_ReadyForProduct.class);
-            }
         });
     }
 
@@ -79,8 +82,12 @@ public class Machine extends Agent<Globals> {
      */
     private boolean isProductFinished() {
         if (currentProduct != null) {
-            long ticksSoFar = getContext().getTick() - currentProduct.startedAt_tick;
+            long currTick = getContext().getTick();
+            long startTick = currentProduct.startedAt_tick;
+            long ticksSoFar = currTick - startTick;
+
             if (ticksSoFar >= currentProduct.cycleTime_ticks) {
+                // logger.info("product done in machine "+getID()+" on tick "+getContext().getTick());
                 return true;
             }
         }

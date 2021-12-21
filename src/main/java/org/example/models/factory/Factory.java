@@ -51,8 +51,10 @@ public class Factory extends AgentBasedModel<Globals> {
         super.step(); // FIRST: do Simudyne stepping
         // seed model with initial products (only on first step)
         firstStep(
-                Conveyor.initializeProducts(getGlobals().numInitialProducts),
                 Machine.initializeProduct()
+        );
+        firstStep(
+                Conveyor.initializeProducts(getGlobals().numInitialProducts)
         );
         // sequence is crucial here, consider Splits
         run(

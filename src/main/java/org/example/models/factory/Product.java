@@ -10,7 +10,7 @@ import simudyne.core.abm.Agent;
  */
 public class Product  {
 
-    public double cycleTime_ticks;
+    public double cycleTime_ticks; // how long should this stay in a machine?
     public long startedAt_tick; // when did product start work on a machine, in ticks. Reset after each machine
     public double distanceToConveyorEnd_m; // if on a conveyor, this reflects how far towards the exit the product has moved currently
 
@@ -20,6 +20,6 @@ public class Product  {
 
     // local functions
     public void startMachining(long startingAt_tick){
-        startingAt_tick = startingAt_tick;
+        this.startedAt_tick = startingAt_tick;
     }
 }

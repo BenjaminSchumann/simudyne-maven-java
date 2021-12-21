@@ -37,6 +37,7 @@ public class Conveyor extends Agent<Globals> {
                         currConveyor.getGlobals().cycleTimeMax_ticks).sample();
                 currConveyor.enterQueue(new Product(cycleTime_ticks));
             }
+            //logger.info("created "+numProducts+" in queue for conveyor "+currConveyor.getID()+": it has "+currConveyor.queue.size());
         });
     }
     /**

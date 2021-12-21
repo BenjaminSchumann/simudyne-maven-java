@@ -13,10 +13,10 @@ public final class Globals extends GlobalState {
     public double rateNewProducts = 1000;
 
     @Input(name = "min cycle time (ms)")
-    public double cycleTimeMin_ticks = 1;
+    public double cycleTimeMin_ticks = 10; // mean CT is about 47ms
 
     @Input(name = "max cycle time (ms)")
-    public double cycleTimeMax_ticks = 1000;
+    public double cycleTimeMax_ticks = 80; // mean CT is about 47ms
 
 
 
