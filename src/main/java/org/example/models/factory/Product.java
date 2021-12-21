@@ -12,6 +12,7 @@ public class Product  {
 
     public double cycleTime_ticks;
     public long startedAt_tick; // when did product start work on a machine, in ticks. Reset after each machine
+    public double distanceToConveyorEnd_m; // if on a conveyor, this reflects how far towards the exit the product has moved currently
 
     public Product(double cycleTime_ticks) {
         this.cycleTime_ticks = cycleTime_ticks;

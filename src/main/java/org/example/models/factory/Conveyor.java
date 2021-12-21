@@ -19,8 +19,11 @@ public class Conveyor extends Agent<Globals> {
     private LinkedList<Product> queue = new LinkedList<>();
     @Constant
     String name; // loaded from csv
+    double speed_mperms = 0.002223; // meter per millisecond (i.e. m/tick)
+    double length_m = 9000; // physical length of conveyor
     @Variable
-    public int queueLength = 0;
+    public int queueLength = 0; // log how many in queue currently, for UI outputs
+
 
     /**
      * Initialize conveyor queue with given number of products. Only call on first step
@@ -32,8 +35,7 @@ public class Conveyor extends Agent<Globals> {
                 double cycleTime_ticks = currConveyor.getPrng().uniform(
                         currConveyor.getGlobals().cycleTimeMin_ticks,
                         currConveyor.getGlobals().cycleTimeMax_ticks).sample();
-                currConveyor.queue.addLast(new Product(cycleTime_ticks));
-                currConveyor.queueLength ++;
+                currConveyor.enterQueue(new Product(cycleTime_ticks));
             }
         });
     }
@@ -58,8 +60,7 @@ public class Conveyor extends Agent<Globals> {
                     double cycleTime_ticks = currConveyor.getPrng().uniform(
                             currConveyor.getGlobals().cycleTimeMin_ticks,
                             currConveyor.getGlobals().cycleTimeMax_ticks).sample();
-                    currConveyor.queue.addLast(new Product(cycleTime_ticks));
-                    currConveyor.queueLength ++;
+                    currConveyor.enterQueue(new Product(cycleTime_ticks));
                 }
 
             }
@@ -73,8 +74,7 @@ public class Conveyor extends Agent<Globals> {
             // System.out.println("Conveyor "+currConveyor.getID()+" starts receiveProductForQueue on tick "+currConveyor.getContext().getTick());
             if (currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class) != null) { // got a msg actually
                 Product arrivingProduct = currConveyor.getMessageOfType(Messages.Msg_ProductForConveyor.class).product;
-                currConveyor.queue.addLast(arrivingProduct);
-                currConveyor.queueLength ++;
+                currConveyor.enterQueue(arrivingProduct);
             }
             if (currConveyor.getMessageOfType(Messages.Msg_ReadyForProduct.class) != null) { // got a msg actually
                 if (currConveyor.queue.size() > 0) { // got more
@@ -93,4 +93,12 @@ public class Conveyor extends Agent<Globals> {
 
     // LOCAL FUNCTIONS
 
+    /**
+     * Call when product enters conveyor at the far end
+     * @param product the product entering
+     */
+    private void enterQueue(Product product) {
+        queue.addLast(product);
+        queueLength ++;
+    }
 }
