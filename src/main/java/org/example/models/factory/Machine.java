@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import simudyne.core.abm.Action;
 import simudyne.core.abm.Agent;
 import simudyne.core.annotations.Constant;
+import simudyne.core.annotations.Variable;
 
 public class Machine extends Agent<Globals> {
     private static final Logger logger = LoggerFactory.getLogger("org.example.models.factory");
@@ -14,6 +15,8 @@ public class Machine extends Agent<Globals> {
     private Product currentProduct = null;
     @Constant
     String name; // loaded from csv
+    @Variable(name="Products done by machine")
+    int numProductsDone = 0;
 
     // ACTIONS
 
@@ -49,6 +52,7 @@ public class Machine extends Agent<Globals> {
                         currMachine.getLongAccumulator("numProdsDone").add(1); // count globally
                     }
                     currMachine.currentProduct = null;
+                    currMachine.numProductsDone++; // count locally
                     // flag upstream that you are empty now
                     if (currMachine.hasLinks(Links.Link_MachineToUpstreamConveyor.class)) {
                         currMachine.getLinks(Links.Link_MachineToUpstreamConveyor.class).

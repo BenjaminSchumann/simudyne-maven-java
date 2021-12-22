@@ -22,7 +22,7 @@ public class Factory extends AgentBasedModel<Globals> {
     @Override
     public void init() {
         // create global outputs
-        createLongAccumulator("numProdsDone", "number of products done");
+        createLongAccumulator("numProdsDone", "Products exited system");
 
         // load all agents
         registerAgentTypes( Conveyor.class, Machine.class);
